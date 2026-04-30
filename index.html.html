@@ -1,0 +1,832 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quiz Editável</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #687085;
+      --brand: #355cff;
+      --brand-dark: #243fd8;
+      --border: #e5e8f0;
+      --good: #1f9d55;
+      --bad: #d93025;
+      --shadow: 0 14px 40px rgba(20, 31, 56, 0.10);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, system-ui, sans-serif;
+      background: radial-gradient(circle at top left, #e9edff 0, transparent 35%), var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header, main {
+      max-width: 1050px;
+      margin: auto;
+      padding: 22px;
+    }
+
+    .hero, .panel, .question-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      padding: 34px;
+      margin-top: 20px;
+      background: linear-gradient(135deg, #ffffff, #eef2ff);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.2rem, 6vw, 4.5rem);
+      letter-spacing: -0.06em;
+      line-height: 1;
+    }
+
+    h2 { margin-top: 0; }
+
+    .subtitle {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 1.05rem;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+      align-items: center;
+    }
+
+    button, .button-like {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      background: var(--brand);
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.95rem;
+      text-decoration: none;
+    }
+
+    button:hover, .button-like:hover { background: var(--brand-dark); }
+
+    button.secondary, .button-like.secondary {
+      background: #eef1ff;
+      color: var(--brand-dark);
+    }
+
+    button.ghost {
+      background: white;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    button.danger {
+      background: #fff0ee;
+      color: var(--bad);
+    }
+
+    button.small {
+      padding: 8px 12px;
+      font-size: 0.82rem;
+    }
+
+    .panel {
+      padding: 20px;
+      margin: 18px 0;
+    }
+
+    .admin {
+      display: none;
+    }
+
+    body.edit-mode .admin {
+      display: block;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      padding: 12px 14px;
+      font: inherit;
+      font-weight: 400;
+      background: white;
+      color: var(--text);
+    }
+
+    textarea {
+      min-height: 85px;
+      resize: vertical;
+    }
+
+    .question-card {
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .question-title {
+      margin: 0 0 16px;
+      font-size: 1.25rem;
+    }
+
+    .answers {
+      display: grid;
+      gap: 10px;
+    }
+
+    .answer-btn {
+      width: 100%;
+      text-align: left;
+      border-radius: 16px;
+      background: #f8f9ff;
+      color: var(--text);
+      border: 1px solid var(--border);
+      box-shadow: none;
+    }
+
+    .answer-btn:hover {
+      background: #eef1ff;
+    }
+
+    .answer-btn.correct {
+      background: #e9f8ef;
+      border-color: #b9e8cb;
+      color: #137a3d;
+    }
+
+    .answer-btn.wrong {
+      background: #fff0ee;
+      border-color: #ffd0ca;
+      color: var(--bad);
+    }
+
+    .answer-btn:disabled {
+      cursor: default;
+    }
+
+    .feedback {
+      margin-top: 14px;
+      font-weight: 700;
+    }
+
+    .feedback.good { color: var(--good); }
+    .feedback.bad { color: var(--bad); }
+
+    .saved-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      border: 1px solid var(--border);
+      background: #fbfcff;
+      padding: 14px;
+      border-radius: 16px;
+      margin-top: 10px;
+    }
+
+    .notice {
+      border-left: 5px solid var(--brand);
+      background: #f2f5ff;
+      padding: 14px 16px;
+      border-radius: 16px;
+      line-height: 1.55;
+    }
+
+    .qr-box {
+      display: grid;
+      grid-template-columns: 230px 1fr;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .qr-preview {
+      width: 220px;
+      height: 220px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: white;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: var(--muted);
+      text-align: center;
+      padding: 10px;
+    }
+
+    .qr-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 30px;
+      border: 1px dashed var(--border);
+      border-radius: 18px;
+      background: white;
+      color: var(--muted);
+    }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      padding: 24px;
+    }
+
+    @media (max-width: 800px) {
+      .grid, .qr-box {
+        grid-template-columns: 1fr;
+      }
+
+      .saved-item {
+        grid-template-columns: 1fr;
+      }
+
+      .qr-preview {
+        width: 100%;
+        max-width: 260px;
+        height: auto;
+        aspect-ratio: 1;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <section class="hero">
+      <h1 id="siteTitle">Quiz Editável</h1>
+      <p class="subtitle" id="siteSubtitle">
+        Site de perguntas com 4 respostas possíveis. Pode ser editado e aberto através de um código QR.
+      </p>
+
+      <div class="toolbar">
+        <button id="toggleEditBtn" type="button">Ativar edição</button>
+        <button id="resetQuizBtn" class="secondary" type="button">Recomeçar quiz</button>
+        <button id="showAnswersBtn" class="ghost" type="button">Mostrar respostas certas</button>
+      </div>
+    </section>
+  </header>
+
+  <main>
+    <section class="panel">
+      <strong>Pontuação:</strong>
+      <span id="scoreText">0 certas em 0 respondidas</span>
+    </section>
+
+    <section class="admin panel">
+      <div class="notice">
+        <strong>Modo de edição:</strong>
+        as alterações ficam guardadas neste navegador. Para partilhares com outras pessoas, usa “Exportar JSON” e guarda uma cópia.
+      </div>
+    </section>
+
+    <section class="admin grid">
+      <div class="panel">
+        <h2>Adicionar / editar pergunta</h2>
+
+        <form id="questionForm">
+          <input type="hidden" id="editingId">
+
+          <label>
+            Pergunta
+            <textarea id="questionInput" required placeholder="Escreve a pergunta..."></textarea>
+          </label>
+
+          <label>
+            Resposta 1
+            <input id="answer1Input" required placeholder="Opção 1">
+          </label>
+
+          <label>
+            Resposta 2
+            <input id="answer2Input" required placeholder="Opção 2">
+          </label>
+
+          <label>
+            Resposta 3
+            <input id="answer3Input" required placeholder="Opção 3">
+          </label>
+
+          <label>
+            Resposta 4
+            <input id="answer4Input" required placeholder="Opção 4">
+          </label>
+
+          <label>
+            Resposta correta
+            <select id="correctInput">
+              <option value="0">Resposta 1</option>
+              <option value="1">Resposta 2</option>
+              <option value="2">Resposta 3</option>
+              <option value="3">Resposta 4</option>
+            </select>
+          </label>
+
+          <label>
+            Explicação opcional
+            <textarea id="explanationInput" placeholder="Ex.: Esta é a resposta certa porque..."></textarea>
+          </label>
+
+          <div class="toolbar">
+            <button type="submit">Guardar pergunta</button>
+            <button id="clearFormBtn" class="secondary" type="button">Limpar</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <h2>Personalizar site</h2>
+
+        <label>
+          Título
+          <input id="titleInput">
+        </label>
+
+        <label>
+          Subtítulo
+          <textarea id="subtitleInput"></textarea>
+        </label>
+
+        <button id="saveTextBtn" type="button">Guardar título</button>
+      </div>
+    </section>
+
+    <section class="admin panel">
+      <h2>Perguntas guardadas</h2>
+      <div id="savedList"></div>
+    </section>
+
+    <section class="admin panel">
+      <h2>Exportar / importar</h2>
+      <p class="subtitle">
+        Usa isto para guardar as perguntas ou passar o quiz para outro computador.
+      </p>
+
+      <div class="toolbar">
+        <button id="exportBtn" type="button">Exportar JSON</button>
+        <label class="button-like secondary" for="importFile">Importar JSON</label>
+        <input id="importFile" type="file" accept="application/json" style="display:none">
+        <button id="resetDataBtn" class="danger" type="button">Repor exemplo</button>
+      </div>
+    </section>
+
+    <section class="admin panel">
+      <h2>Código QR</h2>
+
+      <div class="qr-box">
+        <div id="qrPreview" class="qr-preview">Cole o link público</div>
+
+        <div>
+          <label>
+            Link público do site
+            <input id="publicUrlInput" placeholder="https://exemplo.com/quiz">
+          </label>
+
+          <button id="makeQrBtn" type="button">Gerar QR</button>
+
+          <p class="subtitle">
+            Depois de publicares este ficheiro online, cola aqui o link. O QR vai abrir esse link no telemóvel.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="quizList"></section>
+  </main>
+
+  <footer>
+    Feito em HTML, CSS e JavaScript.
+  </footer>
+
+  <script>
+    const STORAGE_KEY = "quiz_editavel_4_respostas_v1";
+
+    const defaultData = {
+      title: "Quiz Editável",
+      subtitle: "Site de perguntas com 4 respostas possíveis. Pode ser editado e aberto através de um código QR.",
+      questions: [
+        {
+          id: "q1",
+          question: "Qual linguagem é usada para estruturar páginas web?",
+          answers: ["HTML", "Excel", "Photoshop", "Bluetooth"],
+          correct: 0,
+          explanation: "HTML é a linguagem usada para criar a estrutura de uma página web."
+        },
+        {
+          id: "q2",
+          question: "Quantas respostas possíveis tem cada pergunta neste site?",
+          answers: ["2", "3", "4", "5"],
+          correct: 2,
+          explanation: "Cada pergunta tem exatamente 4 respostas possíveis."
+        },
+        {
+          id: "q3",
+          question: "Para que serve um código QR neste projeto?",
+          answers: [
+            "Para abrir o site rapidamente",
+            "Para apagar o site",
+            "Para desligar o computador",
+            "Para mudar a bateria"
+          ],
+          correct: 0,
+          explanation: "O QR aponta para o link público do site."
+        }
+      ]
+    };
+
+    let state = loadData();
+    let answered = {};
+
+    const els = {
+      siteTitle: document.getElementById("siteTitle"),
+      siteSubtitle: document.getElementById("siteSubtitle"),
+      titleInput: document.getElementById("titleInput"),
+      subtitleInput: document.getElementById("subtitleInput"),
+      toggleEditBtn: document.getElementById("toggleEditBtn"),
+      questionForm: document.getElementById("questionForm"),
+      editingId: document.getElementById("editingId"),
+      questionInput: document.getElementById("questionInput"),
+      answer1Input: document.getElementById("answer1Input"),
+      answer2Input: document.getElementById("answer2Input"),
+      answer3Input: document.getElementById("answer3Input"),
+      answer4Input: document.getElementById("answer4Input"),
+      correctInput: document.getElementById("correctInput"),
+      explanationInput: document.getElementById("explanationInput"),
+      clearFormBtn: document.getElementById("clearFormBtn"),
+      saveTextBtn: document.getElementById("saveTextBtn"),
+      savedList: document.getElementById("savedList"),
+      quizList: document.getElementById("quizList"),
+      scoreText: document.getElementById("scoreText"),
+      resetQuizBtn: document.getElementById("resetQuizBtn"),
+      showAnswersBtn: document.getElementById("showAnswersBtn"),
+      exportBtn: document.getElementById("exportBtn"),
+      importFile: document.getElementById("importFile"),
+      resetDataBtn: document.getElementById("resetDataBtn"),
+      publicUrlInput: document.getElementById("publicUrlInput"),
+      makeQrBtn: document.getElementById("makeQrBtn"),
+      qrPreview: document.getElementById("qrPreview")
+    };
+
+    function loadData() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return JSON.parse(JSON.stringify(defaultData));
+        const parsed = JSON.parse(saved);
+
+        return {
+          title: parsed.title || defaultData.title,
+          subtitle: parsed.subtitle || defaultData.subtitle,
+          questions: Array.isArray(parsed.questions) ? parsed.questions : defaultData.questions
+        };
+      } catch {
+        return JSON.parse(JSON.stringify(defaultData));
+      }
+    }
+
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state, null, 2));
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function makeId() {
+      if (crypto.randomUUID) return crypto.randomUUID();
+      return "q_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+    }
+
+    function renderSiteText() {
+      els.siteTitle.textContent = state.title;
+      els.siteSubtitle.textContent = state.subtitle;
+      els.titleInput.value = state.title;
+      els.subtitleInput.value = state.subtitle;
+      document.title = state.title;
+    }
+
+    function renderQuiz() {
+      els.quizList.innerHTML = "";
+
+      if (!state.questions.length) {
+        els.quizList.innerHTML = '<div class="empty">Ainda não há perguntas.</div>';
+        updateScore();
+        return;
+      }
+
+      state.questions.forEach((item, index) => {
+        const selected = answered[item.id];
+        const card = document.createElement("article");
+        card.className = "question-card";
+
+        const answersHtml = item.answers.map((answer, answerIndex) => {
+          let className = "answer-btn";
+
+          if (selected !== undefined) {
+            if (answerIndex === item.correct) className += " correct";
+            else if (answerIndex === selected) className += " wrong";
+          }
+
+          return `
+            <button
+              class="${className}"
+              type="button"
+              data-question-id="${item.id}"
+              data-answer-index="${answerIndex}"
+              ${selected !== undefined ? "disabled" : ""}
+            >
+              ${String.fromCharCode(65 + answerIndex)}. ${escapeHtml(answer)}
+            </button>
+          `;
+        }).join("");
+
+        let feedback = "";
+        if (selected !== undefined) {
+          const isCorrect = selected === item.correct;
+          feedback = `
+            <div class="feedback ${isCorrect ? "good" : "bad"}">
+              ${isCorrect ? "Certo!" : "Errado."}
+              ${item.explanation ? "<br>" + escapeHtml(item.explanation) : ""}
+            </div>
+          `;
+        }
+
+        card.innerHTML = `
+          <h2 class="question-title">${index + 1}. ${escapeHtml(item.question)}</h2>
+          <div class="answers">${answersHtml}</div>
+          ${feedback}
+        `;
+
+        els.quizList.appendChild(card);
+      });
+
+      updateScore();
+    }
+
+    function renderSavedList() {
+      els.savedList.innerHTML = "";
+
+      if (!state.questions.length) {
+        els.savedList.innerHTML = '<div class="empty">Ainda não há perguntas guardadas.</div>';
+        return;
+      }
+
+      state.questions.forEach((item, index) => {
+        const div = document.createElement("div");
+        div.className = "saved-item";
+
+        div.innerHTML = `
+          <div>
+            <strong>${index + 1}. ${escapeHtml(item.question)}</strong>
+            <p class="subtitle" style="margin:6px 0 0;">
+              Resposta certa: ${String.fromCharCode(65 + item.correct)}. ${escapeHtml(item.answers[item.correct])}
+            </p>
+          </div>
+
+          <div class="toolbar" style="margin:0;">
+            <button class="small secondary" type="button" data-action="edit" data-id="${item.id}">Editar</button>
+            <button class="small danger" type="button" data-action="delete" data-id="${item.id}">Apagar</button>
+          </div>
+        `;
+
+        els.savedList.appendChild(div);
+      });
+    }
+
+    function renderAll() {
+      renderSiteText();
+      renderQuiz();
+      renderSavedList();
+    }
+
+    function updateScore() {
+      const answeredIds = Object.keys(answered);
+      const correct = answeredIds.filter(id => {
+        const item = state.questions.find(q => q.id === id);
+        return item && answered[id] === item.correct;
+      }).length;
+
+      els.scoreText.textContent = `${correct} certas em ${answeredIds.length} respondidas`;
+    }
+
+    function clearForm() {
+      els.editingId.value = "";
+      els.questionInput.value = "";
+      els.answer1Input.value = "";
+      els.answer2Input.value = "";
+      els.answer3Input.value = "";
+      els.answer4Input.value = "";
+      els.correctInput.value = "0";
+      els.explanationInput.value = "";
+      els.questionInput.focus();
+    }
+
+    function fillForm(item) {
+      els.editingId.value = item.id;
+      els.questionInput.value = item.question;
+      els.answer1Input.value = item.answers[0] || "";
+      els.answer2Input.value = item.answers[1] || "";
+      els.answer3Input.value = item.answers[2] || "";
+      els.answer4Input.value = item.answers[3] || "";
+      els.correctInput.value = String(item.correct || 0);
+      els.explanationInput.value = item.explanation || "";
+      els.questionInput.focus();
+    }
+
+    els.toggleEditBtn.addEventListener("click", () => {
+      document.body.classList.toggle("edit-mode");
+      els.toggleEditBtn.textContent = document.body.classList.contains("edit-mode")
+        ? "Desativar edição"
+        : "Ativar edição";
+    });
+
+    els.questionForm.addEventListener("submit", event => {
+      event.preventDefault();
+
+      const id = els.editingId.value || makeId();
+
+      const item = {
+        id,
+        question: els.questionInput.value.trim(),
+        answers: [
+          els.answer1Input.value.trim(),
+          els.answer2Input.value.trim(),
+          els.answer3Input.value.trim(),
+          els.answer4Input.value.trim()
+        ],
+        correct: Number(els.correctInput.value),
+        explanation: els.explanationInput.value.trim()
+      };
+
+      if (!item.question || item.answers.some(answer => !answer)) {
+        alert("Preenche a pergunta e as 4 respostas.");
+        return;
+      }
+
+      const index = state.questions.findIndex(q => q.id === id);
+      if (index >= 0) state.questions[index] = item;
+      else state.questions.push(item);
+
+      delete answered[id];
+      saveData();
+      clearForm();
+      renderAll();
+    });
+
+    els.clearFormBtn.addEventListener("click", clearForm);
+
+    els.savedList.addEventListener("click", event => {
+      const btn = event.target.closest("button[data-action]");
+      if (!btn) return;
+
+      const id = btn.dataset.id;
+      const item = state.questions.find(q => q.id === id);
+      if (!item) return;
+
+      if (btn.dataset.action === "edit") {
+        fillForm(item);
+      }
+
+      if (btn.dataset.action === "delete") {
+        if (!confirm("Queres apagar esta pergunta?")) return;
+        state.questions = state.questions.filter(q => q.id !== id);
+        delete answered[id];
+        saveData();
+        renderAll();
+      }
+    });
+
+    els.quizList.addEventListener("click", event => {
+      const btn = event.target.closest("button[data-question-id]");
+      if (!btn) return;
+
+      const questionId = btn.dataset.questionId;
+      const answerIndex = Number(btn.dataset.answerIndex);
+
+      if (answered[questionId] !== undefined) return;
+
+      answered[questionId] = answerIndex;
+      renderQuiz();
+    });
+
+    els.saveTextBtn.addEventListener("click", () => {
+      state.title = els.titleInput.value.trim() || defaultData.title;
+      state.subtitle = els.subtitleInput.value.trim() || defaultData.subtitle;
+      saveData();
+      renderAll();
+    });
+
+    els.resetQuizBtn.addEventListener("click", () => {
+      answered = {};
+      renderQuiz();
+    });
+
+    els.showAnswersBtn.addEventListener("click", () => {
+      state.questions.forEach(q => {
+        answered[q.id] = q.correct;
+      });
+      renderQuiz();
+    });
+
+    els.exportBtn.addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "quiz-editavel.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    els.importFile.addEventListener("change", async event => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const imported = JSON.parse(text);
+
+        if (!Array.isArray(imported.questions)) throw new Error("Formato inválido");
+
+        state = {
+          title: imported.title || defaultData.title,
+          subtitle: imported.subtitle || defaultData.subtitle,
+          questions: imported.questions.map(q => ({
+            id: q.id || makeId(),
+            question: q.question || "Pergunta sem texto",
+            answers: Array.isArray(q.answers) ? q.answers.slice(0, 4) : ["", "", "", ""],
+            correct: Number.isInteger(q.correct) ? q.correct : 0,
+            explanation: q.explanation || ""
+          })).filter(q => q.answers.length === 4)
+        };
+
+        answered = {};
+        saveData();
+        renderAll();
+        alert("Importação concluída.");
+      } catch {
+        alert("Não foi possível importar este ficheiro.");
+      }
+
+      event.target.value = "";
+    });
+
+    els.resetDataBtn.addEventListener("click", () => {
+      if (!confirm("Isto vai apagar as perguntas atuais deste navegador e repor o exemplo. Continuar?")) return;
+      localStorage.removeItem(STORAGE_KEY);
+      answered = {};
+      state = loadData();
+      renderAll();
+    });
+
+    els.makeQrBtn.addEventListener("click", () => {
+      const url = els.publicUrlInput.value.trim();
+
+      if (!url) {
+        alert("Cola primeiro o link público do site.");
+        return;
+      }
+
+      const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=440x440&data=" + encodeURIComponent(url);
+      els.qrPreview.innerHTML = `<img src="${qrUrl}" alt="Código QR para abrir o site">`;
+    });
+
+    renderAll();
+  </script>
+</body>
+</html>
