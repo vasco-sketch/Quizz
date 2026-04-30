@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>O Meu Quiz</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f6fb;
+      color: #172033;
+    }
+
+    header, main {
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    .caixa {
+      background: white;
+      padding: 25px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 42px;
+    }
+
+    p {
+      color: #687085;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin: 7px 0;
+      border: 1px solid #d9deea;
+      border-radius: 14px;
+      background: #f7f8ff;
+      color: #172033;
+      font-size: 16px;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    button:hover {
+      background: #eef1ff;
+    }
+
+    button.certa {
+      background: #e8f8ee;
+      color: #137a3d;
+      border-color: #9ee2b8;
+    }
+
+    button.errada {
+      background: #ffe9e6;
+      color: #d93025;
+      border-color: #ffb7ae;
+    }
+
+    button.recomecar {
+      width: auto;
+      background: #355cff;
+      color: white;
+      border: none;
+      font-weight: bold;
+      border-radius: 999px;
+      padding: 12px 18px;
+    }
+
+    .feedback {
+      margin-top: 12px;
+      font-weight: bold;
+    }
+
+    .bom {
+      color: #137a3d;
+    }
+
+    .mau {
+      color: #d93025;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="caixa">
+      <h1>O Meu Quiz</h1>
+      <p>Escolhe a resposta certa. Cada pergunta tem 4 opções.</p>
+      <p><strong>Pontuação:</strong> <span id="pontuacao">0 certas em 0 respondidas</span></p>
+      <button class="recomecar" onclick="recomecarQuiz()">Recomeçar quiz</button>
+    </div>
+  </header>
+
+  <main id="quiz"></main>
+
+  <script>
+    const perguntas = [
+      {
+        pergunta: "Qual é a capital de Portugal?",
+        respostas: ["Porto", "Lisboa", "Coimbra", "Braga"],
+        certa: 1,
+        explicacao: "A capital de Portugal é Lisboa."
+      },
+      {
+        pergunta: "Quanto é 5 + 3?",
+        respostas: ["6", "7", "8", "9"],
+        certa: 2,
+        explicacao: "5 + 3 é igual a 8."
+      },
+      {
+        pergunta: "Qual destes é usado para criar páginas web?",
+        respostas: ["HTML", "Excel", "Bluetooth", "Paint"],
+        certa: 0,
+        explicacao: "HTML é usado para criar a estrutura das páginas web."
+      }
+    ];
+
+    let respondidas = {};
+
+    function desenharQuiz() {
+      const quiz = document.getElementById("quiz");
+      quiz.innerHTML = "";
+
+      perguntas.forEach((item, indice) => {
+        const caixa = document.createElement("div");
+        caixa.className = "caixa";
+
+        let html = `<h2>${indice + 1}. ${item.pergunta}</h2>`;
+
+        item.respostas.forEach((resposta, i) => {
+          let classe = "";
+
+          if (respondidas[indice] !== undefined) {
+            if (i === item.certa) {
+              classe = "certa";
+            } else if (i === respondidas[indice]) {
+              classe = "errada";
+            }
+          }
+
+          html += `
+            <button class="${classe}" onclick="responder(${indice}, ${i})">
+              ${String.fromCharCode(65 + i)}. ${resposta}
+            </button>
+          `;
+        });
+
+        if (respondidas[indice] !== undefined) {
+          const acertou = respondidas[indice] === item.certa;
+
+          html += `
+            <div class="feedback ${acertou ? "bom" : "mau"}">
+              ${acertou ? "Certo!" : "Errado."}
+              <br>
+              ${item.explicacao}
+            </div>
+          `;
+        }
+
+        caixa.innerHTML = html;
+        quiz.appendChild(caixa);
+      });
+
+      atualizarPontuacao();
+    }
+
+    function responder(numeroPergunta, respostaEscolhida) {
+      if (respondidas[numeroPergunta] !== undefined) {
+        return;
+      }
+
+      respondidas[numeroPergunta] = respostaEscolhida;
+      desenharQuiz();
+    }
+
+    function atualizarPontuacao() {
+      const totalRespondidas = Object.keys(respondidas).length;
+      let certas = 0;
+
+      for (let numero in respondidas) {
+        if (respondidas[numero] === perguntas[numero].certa) {
+          certas++;
+        }
+      }
+
+      document.getElementById("pontuacao").textContent =
+        `${certas} certas em ${totalRespondidas} respondidas`;
+    }
+
+    function recomecarQuiz() {
+      respondidas = {};
+      desenharQuiz();
+    }
+
+    desenharQuiz();
+  </script>
+</body>
+</html>
