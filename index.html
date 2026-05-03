@@ -52,6 +52,10 @@
       cursor: pointer;
     }
 
+    button:hover {
+      background: #243fd8;
+    }
+
     .certo {
       color: green;
       font-weight: bold;
@@ -59,6 +63,11 @@
 
     .errado {
       color: red;
+      font-weight: bold;
+    }
+
+    .normal {
+      color: #687085;
       font-weight: bold;
     }
 
@@ -87,7 +96,7 @@
 
       <button onclick="corrigirResposta()">Corrigir com IA</button>
 
-      <p id="resultado"></p>
+      <p id="resultado" class="normal"></p>
     </div>
 
     <div class="caixa">
@@ -125,10 +134,12 @@
     let certas = 0;
 
     function mostrarPergunta() {
-      document.getElementById("pergunta").textContent = perguntas[perguntaAtual].pergunta;
+      document.getElementById("pergunta").textContent =
+        perguntas[perguntaAtual].pergunta;
+
       document.getElementById("respostaAluno").value = "";
       document.getElementById("resultado").textContent = "";
-      document.getElementById("resultado").className = "";
+      document.getElementById("resultado").className = "normal";
     }
 
     async function corrigirResposta() {
@@ -143,11 +154,12 @@
 
       if (respondidas[perguntaAtual]) {
         resultado.textContent = "Já respondeste a esta pergunta.";
+        resultado.className = "normal";
         return;
       }
 
       resultado.textContent = "A corrigir com IA...";
-      resultado.className = "";
+      resultado.className = "normal";
 
       try {
         const resposta = await fetch(WORKER_URL, {
@@ -194,6 +206,7 @@
 
     function atualizarPontuacao() {
       const totalRespondidas = Object.keys(respondidas).length;
+
       document.getElementById("pontuacao").textContent =
         certas + " certas em " + totalRespondidas + " respondidas";
     }
