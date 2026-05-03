@@ -14,7 +14,7 @@
     }
 
     main {
-      max-width: 850px;
+      max-width: 900px;
       margin: auto;
       padding: 25px;
     }
@@ -32,13 +32,14 @@
       font-size: 42px;
     }
 
-    input {
+    input, select {
       width: 100%;
       padding: 14px;
       font-size: 17px;
       border-radius: 12px;
       border: 1px solid #d9deea;
       box-sizing: border-box;
+      margin-top: 8px;
     }
 
     button {
@@ -56,6 +57,29 @@
       background: #243fd8;
     }
 
+    .opcao {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: #f7f8ff;
+      color: #172033;
+      border: 1px solid #d9deea;
+      border-radius: 14px;
+      margin: 8px 0;
+    }
+
+    .opcao.certa {
+      background: #e8f8ee;
+      color: #137a3d;
+      border-color: #9ee2b8;
+    }
+
+    .opcao.errada {
+      background: #ffe9e6;
+      color: #d93025;
+      border-color: #ffb7ae;
+    }
+
     .certo {
       color: green;
       font-weight: bold;
@@ -71,11 +95,43 @@
       font-weight: bold;
     }
 
+    .grupo {
+      color: #355cff;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .linha-correspondencia {
+      display: grid;
+      grid-template-columns: 1fr 120px;
+      gap: 12px;
+      align-items: center;
+      margin: 12px 0;
+      padding: 12px;
+      border: 1px solid #e6e8f0;
+      border-radius: 14px;
+      background: #fbfcff;
+    }
+
+    .descricao {
+      background: #f7f8ff;
+      padding: 12px;
+      border-radius: 14px;
+      margin: 8px 0;
+      border: 1px solid #e6e8f0;
+    }
+
     .qr {
       width: 220px;
       height: 220px;
       border-radius: 16px;
       border: 1px solid #ddd;
+    }
+
+    @media (max-width: 700px) {
+      .linha-correspondencia {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -84,18 +140,15 @@
   <main>
     <div class="caixa">
       <h1>Quiz com IA</h1>
-      <p>Escreve a resposta. A inteligência artificial vai corrigir mesmo que escrevas de outra forma.</p>
+      <p>Grupo I: respostas escritas corrigidas com IA. Grupos II e III: exercícios normais.</p>
       <p><strong>Pontuação:</strong> <span id="pontuacao">0 certas em 0 respondidas</span></p>
       <button onclick="recomecarQuiz()">Recomeçar quiz</button>
     </div>
 
     <div class="caixa">
+      <div id="grupo" class="grupo"></div>
       <h2 id="pergunta"></h2>
-
-      <input id="respostaAluno" placeholder="Escreve a tua resposta aqui">
-
-      <button onclick="corrigirResposta()">Corrigir com IA</button>
-
+      <div id="areaResposta"></div>
       <p id="resultado" class="normal"></p>
     </div>
 
@@ -116,16 +169,126 @@
 
     const perguntas = [
       {
-        pergunta: "Qual é a capital de Portugal?",
-        respostaCerta: "Lisboa"
+        tipo: "ia",
+        grupo: "Grupo I",
+        pergunta: "O que caracteriza as defesas não específicas?",
+        respostaCerta: "São defesas inatas, gerais e rápidas, que atuam contra vários agentes patogénicos sem reconhecer especificamente cada um deles."
       },
       {
-        pergunta: "Quem descobriu o Brasil?",
-        respostaCerta: "Pedro Álvares Cabral"
+        tipo: "ia",
+        grupo: "Grupo I",
+        pergunta: "Qual é a primeira condição necessária para que um agente infecioso cause uma doença no corpo?",
+        respostaCerta: "O agente infecioso tem de conseguir entrar no corpo e ultrapassar as barreiras de defesa."
       },
       {
-        pergunta: "Qual é o maior planeta do Sistema Solar?",
-        respostaCerta: "Júpiter"
+        tipo: "ia",
+        grupo: "Grupo I",
+        pergunta: "Como é constituído o revestimento epitelial da pele para servir de barreira?",
+        respostaCerta: "É constituído por células epiteliais muito próximas e unidas entre si, formando uma barreira física contra a entrada de microrganismos."
+      },
+      {
+        tipo: "ia",
+        grupo: "Grupo I",
+        pergunta: "O que são desmossomas e qual é a sua função nas barreiras físicas?",
+        respostaCerta: "Os desmossomas são estruturas que ligam as células umas às outras, reforçando a união entre elas e tornando a barreira física mais resistente."
+      },
+      {
+        tipo: "ia",
+        grupo: "Grupo I",
+        pergunta: "Além das células da pele, que outras estruturas físicas oferecem proteção adicional?",
+        respostaCerta: "Pelos, cílios, mucosas, muco, lágrimas e saliva podem oferecer proteção adicional contra agentes patogénicos."
+      },
+      {
+        tipo: "ia",
+        grupo: "Grupo I",
+        pergunta: "O que são os fagócitos e qual é a sua função principal nos tecidos?",
+        respostaCerta: "Os fagócitos são células de defesa que englobam e destroem microrganismos ou partículas estranhas através da fagocitose."
+      },
+      {
+        tipo: "ia",
+        grupo: "Grupo I",
+        pergunta: "O que acontece após a formação da vesícula com o agente patogénico no interior da célula?",
+        respostaCerta: "A vesícula funde-se com lisossomas, que libertam enzimas digestivas para destruir o agente patogénico."
+      },
+
+      {
+        tipo: "opcoes",
+        grupo: "Grupo II",
+        pergunta: "As células natural killer, ou NK, são um tipo de:",
+        opcoes: [
+          "A) Macrófagos de resposta lenta.",
+          "B) Linfócitos de resposta muito rápida.",
+          "C) Proteínas produzidas pela pele.",
+          "D) Bactérias benéficas do sistema digestivo."
+        ],
+        certa: 1
+      },
+      {
+        tipo: "opcoes",
+        grupo: "Grupo II",
+        pergunta: "Qual é a principal função das células NK?",
+        opcoes: [
+          "A) Realizar a fagocitose de bactérias no sangue.",
+          "B) Produzir anticorpos específicos para cada vírus.",
+          "C) Reconhecer e destruir células cancerosas ou infetadas por vírus.",
+          "D) Transportar oxigénio para os tecidos inflamados."
+        ],
+        certa: 2
+      },
+      {
+        tipo: "correspondencia",
+        grupo: "Grupo II",
+        pergunta: "Faz corresponder os termos da Coluna A às descrições corretas da Coluna B.",
+        termos: [
+          "1. Células-alvo",
+          "2. Perforinas",
+          "3. Células anormais",
+          "4. Enzimas"
+        ],
+        descricoes: [
+          "A) Reduzem a proliferação destas células, prevenindo o cancro.",
+          "B) Célula anómala, infetada ou cancerosa, que será destruída.",
+          "C) Proteínas que provocam perfurações na membrana celular.",
+          "D) Substâncias libertadas pelas NK que participam na destruição."
+        ],
+        respostasCertas: ["B", "C", "A", "D"]
+      },
+
+      {
+        tipo: "opcoes",
+        grupo: "Grupo III",
+        pergunta: "Quais são os cinco principais sintomas da resposta inflamatória?",
+        opcoes: [
+          "A) Febre, tosse, rubor e espirros.",
+          "B) Rubor, calor, tumefação, dor e impotência funcional.",
+          "C) Diapedese, quimiotaxia, fagocitose, febre e edema.",
+          "D) Vasodilatação, quimiotaxia, dor, frio e palidez."
+        ],
+        certa: 1
+      },
+      {
+        tipo: "opcoes",
+        grupo: "Grupo III",
+        pergunta: "O fenómeno de migração dos leucócitos do sangue para os tecidos, através das paredes dos capilares, mudando a sua morfologia, chama-se:",
+        opcoes: [
+          "A) Quimiotaxia.",
+          "B) Fagocitose.",
+          "C) Diapedese.",
+          "D) Exocitose."
+        ],
+        certa: 2
+      },
+      {
+        tipo: "opcoes",
+        grupo: "Grupo III",
+        pergunta: "A febre é considerada uma resposta sistémica vantajosa porque:",
+        opcoes: [
+          "A) Estimula a proliferação de microrganismos.",
+          "B) Inibe a resposta inflamatória.",
+          "C) Estimula a resposta inflamatória e inibe a proliferação de alguns microrganismos.",
+          "D) Aumenta a dissipação de calor através do hipotálamo."
+        ],
+        certa: 2
       }
     ];
 
@@ -134,15 +297,65 @@
     let certas = 0;
 
     function mostrarPergunta() {
-      document.getElementById("pergunta").textContent =
-        perguntas[perguntaAtual].pergunta;
+      const item = perguntas[perguntaAtual];
 
-      document.getElementById("respostaAluno").value = "";
+      document.getElementById("grupo").textContent = item.grupo;
+      document.getElementById("pergunta").textContent = item.pergunta;
       document.getElementById("resultado").textContent = "";
       document.getElementById("resultado").className = "normal";
+
+      const area = document.getElementById("areaResposta");
+      area.innerHTML = "";
+
+      if (item.tipo === "ia") {
+        area.innerHTML = `
+          <input id="respostaAluno" placeholder="Escreve a tua resposta aqui">
+          <button onclick="corrigirComIA()">Corrigir com IA</button>
+        `;
+      }
+
+      if (item.tipo === "opcoes") {
+        item.opcoes.forEach((opcao, indice) => {
+          area.innerHTML += `
+            <button class="opcao" onclick="corrigirOpcao(${indice})">
+              ${opcao}
+            </button>
+          `;
+        });
+      }
+
+      if (item.tipo === "correspondencia") {
+        let html = "<h3>Coluna B</h3>";
+
+        item.descricoes.forEach(descricao => {
+          html += `<div class="descricao">${descricao}</div>`;
+        });
+
+        html += "<h3>Coluna A</h3>";
+
+        item.termos.forEach((termo, indice) => {
+          html += `
+            <div class="linha-correspondencia">
+              <strong>${termo}</strong>
+              <select id="corr_${indice}">
+                <option value="">Escolher</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+              </select>
+            </div>
+          `;
+        });
+
+        html += `<button onclick="corrigirCorrespondencia()">Verificar correspondência</button>`;
+
+        area.innerHTML = html;
+      }
     }
 
-    async function corrigirResposta() {
+    async function corrigirComIA() {
+      const item = perguntas[perguntaAtual];
       const respostaAluno = document.getElementById("respostaAluno").value.trim();
       const resultado = document.getElementById("resultado");
 
@@ -168,8 +381,8 @@
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            pergunta: perguntas[perguntaAtual].pergunta,
-            respostaCerta: perguntas[perguntaAtual].respostaCerta,
+            pergunta: item.pergunta,
+            respostaCerta: item.respostaCerta,
             respostaAluno: respostaAluno
           })
         });
@@ -188,20 +401,107 @@
         }
 
         atualizarPontuacao();
-
-        setTimeout(function() {
-          if (perguntaAtual < perguntas.length - 1) {
-            perguntaAtual++;
-            mostrarPergunta();
-          } else {
-            resultado.textContent += " Fim do quiz!";
-          }
-        }, 2500);
+        passarParaProxima();
 
       } catch (erro) {
         resultado.textContent = "Erro ao contactar a IA.";
         resultado.className = "errado";
       }
+    }
+
+    function corrigirOpcao(indiceEscolhido) {
+      const item = perguntas[perguntaAtual];
+      const resultado = document.getElementById("resultado");
+
+      if (respondidas[perguntaAtual]) {
+        resultado.textContent = "Já respondeste a esta pergunta.";
+        return;
+      }
+
+      respondidas[perguntaAtual] = true;
+
+      const botoes = document.querySelectorAll(".opcao");
+
+      botoes.forEach((botao, indice) => {
+        if (indice === item.certa) {
+          botao.classList.add("certa");
+        }
+
+        if (indice === indiceEscolhido && indiceEscolhido !== item.certa) {
+          botao.classList.add("errada");
+        }
+
+        botao.disabled = true;
+      });
+
+      if (indiceEscolhido === item.certa) {
+        certas++;
+        resultado.textContent = "Certo!";
+        resultado.className = "certo";
+      } else {
+        resultado.textContent = "Errado.";
+        resultado.className = "errado";
+      }
+
+      atualizarPontuacao();
+      passarParaProxima();
+    }
+
+    function corrigirCorrespondencia() {
+      const item = perguntas[perguntaAtual];
+      const resultado = document.getElementById("resultado");
+
+      if (respondidas[perguntaAtual]) {
+        resultado.textContent = "Já respondeste a esta pergunta.";
+        return;
+      }
+
+      let todasPreenchidas = true;
+      let tudoCerto = true;
+
+      item.respostasCertas.forEach((respostaCerta, indice) => {
+        const select = document.getElementById("corr_" + indice);
+        const respostaAluno = select.value;
+
+        if (!respostaAluno) {
+          todasPreenchidas = false;
+        }
+
+        if (respostaAluno !== respostaCerta) {
+          tudoCerto = false;
+        }
+      });
+
+      if (!todasPreenchidas) {
+        resultado.textContent = "Escolhe uma letra para todos os termos.";
+        resultado.className = "errado";
+        return;
+      }
+
+      respondidas[perguntaAtual] = true;
+
+      if (tudoCerto) {
+        certas++;
+        resultado.textContent = "Certo! Correspondência correta: 1-B, 2-C, 3-A, 4-D.";
+        resultado.className = "certo";
+      } else {
+        resultado.textContent = "Errado. A correspondência correta era: 1-B, 2-C, 3-A, 4-D.";
+        resultado.className = "errado";
+      }
+
+      atualizarPontuacao();
+      passarParaProxima();
+    }
+
+    function passarParaProxima() {
+      setTimeout(function() {
+        if (perguntaAtual < perguntas.length - 1) {
+          perguntaAtual++;
+          mostrarPergunta();
+        } else {
+          document.getElementById("resultado").textContent += " Fim do quiz!";
+        }
+      }, 2500);
     }
 
     function atualizarPontuacao() {
