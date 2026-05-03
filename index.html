@@ -1,177 +1,212 @@
-export default {
-  async fetch(request, env) {
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "https://vasco-sketch.github.io",
-      "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
-      "Access-Control-Allow-Headers": "Content-Type"
-    };
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quiz com IA</title>
 
-    if (request.method === "OPTIONS") {
-      return new Response(null, {
-        status: 204,
-        headers: corsHeaders
-      });
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f6fb;
+      color: #172033;
     }
 
-    if (request.method === "GET") {
-      return Response.json(
-        {
-          estado: "Worker ligado",
-          mensagem: "O Worker do quiz com IA está a funcionar."
-        },
-        {
-          headers: corsHeaders
-        }
-      );
+    main {
+      max-width: 850px;
+      margin: auto;
+      padding: 25px;
     }
 
-    try {
-      const body = await request.json();
+    .caixa {
+      background: white;
+      padding: 25px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    }
 
-      const pergunta = body.pergunta || "";
-      const respostaCerta = body.respostaCerta || "";
-      const respostaAluno = body.respostaAluno || "";
+    h1 {
+      margin-top: 0;
+      font-size: 42px;
+    }
 
-      if (!env.GEMINI_API_KEY) {
-        return Response.json(
-          {
-            certa: false,
-            feedback: "A chave GEMINI_API_KEY não está configurada no Worker."
-          },
-          {
-            status: 500,
-            headers: corsHeaders
-          }
-        );
+    input {
+      width: 100%;
+      padding: 14px;
+      font-size: 17px;
+      border-radius: 12px;
+      border: 1px solid #d9deea;
+      box-sizing: border-box;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 12px 18px;
+      border: none;
+      border-radius: 999px;
+      background: #355cff;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .certo {
+      color: green;
+      font-weight: bold;
+    }
+
+    .errado {
+      color: red;
+      font-weight: bold;
+    }
+
+    .qr {
+      width: 220px;
+      height: 220px;
+      border-radius: 16px;
+      border: 1px solid #ddd;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <div class="caixa">
+      <h1>Quiz com IA</h1>
+      <p>Escreve a resposta. A inteligência artificial vai corrigir mesmo que escrevas de outra forma.</p>
+      <p><strong>Pontuação:</strong> <span id="pontuacao">0 certas em 0 respondidas</span></p>
+      <button onclick="recomecarQuiz()">Recomeçar quiz</button>
+    </div>
+
+    <div class="caixa">
+      <h2 id="pergunta"></h2>
+
+      <input id="respostaAluno" placeholder="Escreve a tua resposta aqui">
+
+      <button onclick="corrigirResposta()">Corrigir com IA</button>
+
+      <p id="resultado"></p>
+    </div>
+
+    <div class="caixa">
+      <h2>Abrir por QR Code</h2>
+      <p>Aponta a câmara do telemóvel para abrir este quiz.</p>
+
+      <img
+        class="qr"
+        src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://vasco-sketch.github.io/Quizz/"
+        alt="QR Code do quiz"
+      >
+    </div>
+  </main>
+
+  <script>
+    const WORKER_URL = "https://raspy-breeze-9620.vascomoreiramail19.workers.dev/";
+
+    const perguntas = [
+      {
+        pergunta: "Qual é a capital de Portugal?",
+        respostaCerta: "Lisboa"
+      },
+      {
+        pergunta: "Quem descobriu o Brasil?",
+        respostaCerta: "Pedro Álvares Cabral"
+      },
+      {
+        pergunta: "Qual é o maior planeta do Sistema Solar?",
+        respostaCerta: "Júpiter"
+      }
+    ];
+
+    let perguntaAtual = 0;
+    let respondidas = {};
+    let certas = 0;
+
+    function mostrarPergunta() {
+      document.getElementById("pergunta").textContent = perguntas[perguntaAtual].pergunta;
+      document.getElementById("respostaAluno").value = "";
+      document.getElementById("resultado").textContent = "";
+      document.getElementById("resultado").className = "";
+    }
+
+    async function corrigirResposta() {
+      const respostaAluno = document.getElementById("respostaAluno").value.trim();
+      const resultado = document.getElementById("resultado");
+
+      if (!respostaAluno) {
+        resultado.textContent = "Escreve uma resposta primeiro.";
+        resultado.className = "errado";
+        return;
       }
 
-      if (!pergunta || !respostaCerta || !respostaAluno) {
-        return Response.json(
-          {
-            certa: false,
-            feedback: "Faltam dados para corrigir a resposta."
-          },
-          {
-            status: 400,
-            headers: corsHeaders
-          }
-        );
+      if (respondidas[perguntaAtual]) {
+        resultado.textContent = "Já respondeste a esta pergunta.";
+        return;
       }
 
-      const prompt = `
-És um corretor de quiz em português de Portugal.
-
-Avalia se a resposta do aluno está correta.
-
-Regras:
-- Aceita respostas com palavras diferentes se o significado estiver correto.
-- Ignora maiúsculas, minúsculas, acentos e pequenos erros de escrita.
-- Não aceites respostas vagas demais.
-- Responde apenas em JSON válido.
-- Não uses markdown.
-
-Pergunta:
-${pergunta}
-
-Resposta esperada:
-${respostaCerta}
-
-Resposta do aluno:
-${respostaAluno}
-
-Responde exatamente neste formato:
-{
-  "certa": true,
-  "feedback": "frase curta"
-}
-
-Ou:
-{
-  "certa": false,
-  "feedback": "frase curta"
-}
-`;
-
-      const geminiUrl =
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" +
-        env.GEMINI_API_KEY;
-
-      const respostaGemini = await fetch(geminiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt
-                }
-              ]
-            }
-          ],
-          generationConfig: {
-            temperature: 0,
-            responseMimeType: "application/json"
-          }
-        })
-      });
-
-      const dadosGemini = await respostaGemini.json();
-
-      if (!respostaGemini.ok) {
-        return Response.json(
-          {
-            certa: false,
-            feedback: "Erro da Gemini: verifica se a chave API está correta."
-          },
-          {
-            status: 500,
-            headers: corsHeaders
-          }
-        );
-      }
-
-      const texto =
-        dadosGemini.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-      let resultado;
+      resultado.textContent = "A corrigir com IA...";
+      resultado.className = "";
 
       try {
-        resultado = JSON.parse(texto);
-      } catch {
-        resultado = {
-          certa: false,
-          feedback: "A IA respondeu num formato inválido."
-        };
-      }
+        const resposta = await fetch(WORKER_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            pergunta: perguntas[perguntaAtual].pergunta,
+            respostaCerta: perguntas[perguntaAtual].respostaCerta,
+            respostaAluno: respostaAluno
+          })
+        });
 
-      if (typeof resultado.certa !== "boolean") {
-        resultado.certa = false;
-      }
+        const dados = await resposta.json();
 
-      if (!resultado.feedback) {
-        resultado.feedback = resultado.certa
-          ? "Resposta aceite."
-          : "Resposta não aceite.";
-      }
+        respondidas[perguntaAtual] = true;
 
-      return Response.json(resultado, {
-        headers: corsHeaders
-      });
-
-    } catch (erro) {
-      return Response.json(
-        {
-          certa: false,
-          feedback: "Erro ao contactar a IA."
-        },
-        {
-          status: 500,
-          headers: corsHeaders
+        if (dados.certa === true) {
+          certas++;
+          resultado.textContent = "Certo! " + (dados.feedback || "Resposta aceite.");
+          resultado.className = "certo";
+        } else {
+          resultado.textContent = "Errado. " + (dados.feedback || "Resposta não aceite.");
+          resultado.className = "errado";
         }
-      );
+
+        atualizarPontuacao();
+
+        setTimeout(function() {
+          if (perguntaAtual < perguntas.length - 1) {
+            perguntaAtual++;
+            mostrarPergunta();
+          } else {
+            resultado.textContent += " Fim do quiz!";
+          }
+        }, 2500);
+
+      } catch (erro) {
+        resultado.textContent = "Erro ao contactar a IA.";
+        resultado.className = "errado";
+      }
     }
-  }
-};
+
+    function atualizarPontuacao() {
+      const totalRespondidas = Object.keys(respondidas).length;
+      document.getElementById("pontuacao").textContent =
+        certas + " certas em " + totalRespondidas + " respondidas";
+    }
+
+    function recomecarQuiz() {
+      perguntaAtual = 0;
+      respondidas = {};
+      certas = 0;
+      atualizarPontuacao();
+      mostrarPergunta();
+    }
+
+    mostrarPergunta();
+  </script>
+</body>
+</html>
